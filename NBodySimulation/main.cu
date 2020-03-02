@@ -26,13 +26,13 @@ float deltaTime = 0.0f;
 bool firstMouse = true;
 float lastX = 0.0f;
 float lastY = 0.0f;
-Camera camera(glm::vec3(0.f, 0.f, 80.f), glm::vec3(0.f, 1.0f, 0.0f));
+Camera camera(glm::vec3(0.f, 0.f, 5.f), glm::vec3(0.f, 1.0f, 0.0f));
 
 int main()
 {
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	GLFWwindow *window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
 	if (window == NULL) {
@@ -53,16 +53,21 @@ int main()
 	Shader instancingShader("vertex.glsl", "fragment.glsl");
 	
 	//Model loading
-	Model planetModel("assets/planet.obj");
 	Model rockModel("assets/rock.obj");
 
 	// generate a large list of semi-random model transformation matrices
 	glm::mat4* modelMatrices;
-	modelMatrices = new glm::mat4[N];
+	glm::vec4 * positions;
+	positions = new glm::vec4[N];
+	glm::vec4 * accelerations;
+	accelerations = new glm::vec4[N];
+	float * rotations;
+	rotations = new float[N];
 	srand(glfwGetTime()); // initialize random seed	
 	for (unsigned int i = 0; i < N; i++)
 	{
-		glm::mat4 model = glm::mat4(1.0f);
+		//Start acceleration is 0
+		accelerations[i] = glm::vec4(0.0f, 0.5f, 0.0f, 1.0f);
 		
 		//Position: random point inside a sphere of radius RADIUS
 		float x, y, z;
@@ -73,26 +78,28 @@ int main()
 		x = radius * cos(theta) * cos(gamma);
 		y = radius * sin(gamma);
 		z = radius * sin(theta) * cos(gamma);
-		//Model matrix
-		model = glm::translate(model, glm::vec3(x, y, z));
-
 		// Scale: scale depending on mass
 		float mass = (rand() % MASS_SEED) / 100.0f + 0.5f;
-		//TODO: save mass on data structure
-		model = glm::scale(model, glm::vec3(mass));
-
+		positions[i] = glm::vec4(x, y, z, mass);
 		// Rotation: add random rotation around a randomly picked rotation axis vector
 		float rotAngle = (rand() % 360);
-		model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
-		
-		modelMatrices[i] = model;
+		rotations[i] = rotAngle;
 	}
 
-	// vertex Buffer Object
-	unsigned int buffer;
-	glGenBuffers(1, &buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, N * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+	// vertex Buffer Objects
+	unsigned int buffer_positions, buffer_accelerations, buffer_rotations;
+	glGenBuffers(1, &buffer_positions);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer_positions);
+	glBufferData(GL_ARRAY_BUFFER, N * sizeof(glm::vec4), &positions[0], GL_DYNAMIC_DRAW);
+
+	glGenBuffers(1, &buffer_accelerations);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer_accelerations);
+	glBufferData(GL_ARRAY_BUFFER, N * sizeof(glm::vec4), &accelerations[0], GL_DYNAMIC_DRAW);
+
+	glGenBuffers(1, &buffer_rotations);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer_rotations);
+	glBufferData(GL_ARRAY_BUFFER, N * sizeof(float), &rotations[0], GL_DYNAMIC_DRAW);
+
 	//TODO Bind also to cuda. Consider passing only positions, and then to the model matrix calculation inside 
 	//the shaders. You need position and acceleration, then each shader will calculate the model matrix based on that
 	std::vector<int> VAOs = rockModel.GetVAOs();
@@ -101,20 +108,20 @@ int main()
 		unsigned int VAO = VAOs[i];
 		glBindVertexArray(VAO);
 		// vertex Attributes
-		GLsizei vec4Size = sizeof(glm::vec4);
+		GLsizei f4size = sizeof(glm::vec4);
+		glBindBuffer(GL_ARRAY_BUFFER, buffer_positions);
 		glEnableVertexAttribArray(3);
-		glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+		glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, f4size, (void*)0);
+		glBindBuffer(GL_ARRAY_BUFFER, buffer_accelerations);
 		glEnableVertexAttribArray(4);
-		glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
+		glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, f4size, (void*)0);
+		glBindBuffer(GL_ARRAY_BUFFER, buffer_rotations);
 		glEnableVertexAttribArray(5);
-		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
-		glEnableVertexAttribArray(6);
-		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
+		glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
 
 		glVertexAttribDivisor(3, 1);
 		glVertexAttribDivisor(4, 1);
 		glVertexAttribDivisor(5, 1);
-		glVertexAttribDivisor(6, 1);
 
 		glBindVertexArray(0);
 	}
