@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="include">
+      <UniqueIdentifier>{576bfe2b-21f3-41cd-9ee9-a22deddce95b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source">
+      <UniqueIdentifier>{7ef5eb5b-d2f4-45ed-b99c-74502b7ada66}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{4e4e44ed-689b-4439-9afc-9105774e97e8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="main.cu">
+      <Filter>source</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Camera.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.h">
+      <Filter>include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Camera.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Model.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="fragment.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="vertex.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="vertex_planet.glsl">
+      <Filter>shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>
