@@ -1,14 +1,17 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include "glad/glad.h"
+#include "cuda_gl_interop.h"
 #include "Model.h"
 #include "Shader.h"
 #include "Mesh.h"
 #include "Camera.h"
+#include "nBodyKernels.cuh"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image/stb_image.h"
 #include "glfw/glfw3.h"
 #include <iostream>
+#include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <stdio.h>
 
@@ -31,8 +34,8 @@ Camera camera(glm::vec3(0.f, 0.f, 5.f), glm::vec3(0.f, 1.0f, 0.0f));
 int main()
 {
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	GLFWwindow *window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
 	if (window == NULL) {
@@ -88,13 +91,28 @@ int main()
 
 	// vertex Buffer Objects
 	unsigned int buffer_positions, buffer_accelerations, buffer_rotations;
+	//CUDA Graphics resources
+	cudaGraphicsResource *cudaPositionsResource, *cudaAccelerationsResource;
+	//CUDA buffer pointers
+	float4 *cudaPositions, *cudaAccelerations;
+	//Positions VBO
+	size_t size = N * 4 * sizeof(float);
 	glGenBuffers(1, &buffer_positions);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer_positions);
-	glBufferData(GL_ARRAY_BUFFER, N * sizeof(glm::vec4), &positions[0], GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, size, &positions[0], GL_DYNAMIC_DRAW);
+	//Mapping the VBO to CUDA
+	cudaGraphicsGLRegisterBuffer(&cudaPositionsResource, buffer_positions, cudaGraphicsRegisterFlags::cudaGraphicsRegisterFlagsNone);
+	cudaGraphicsMapResources(1, &cudaPositionsResource);
+	cudaGraphicsResourceGetMappedPointer((void **)&cudaPositions, &size, cudaPositionsResource);
 
+	//Acceleration VBO
 	glGenBuffers(1, &buffer_accelerations);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer_accelerations);
-	glBufferData(GL_ARRAY_BUFFER, N * sizeof(glm::vec4), &accelerations[0], GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, size, &accelerations[0], GL_DYNAMIC_DRAW);
+	//Mapping the VBO to CUDA
+	cudaGraphicsGLRegisterBuffer(&cudaAccelerationsResource, buffer_accelerations, cudaGraphicsRegisterFlags::cudaGraphicsRegisterFlagsNone);
+	cudaGraphicsMapResources(1, &cudaAccelerationsResource);
+	cudaGraphicsResourceGetMappedPointer((void **)&cudaAccelerations, &size, cudaAccelerationsResource);
 
 	glGenBuffers(1, &buffer_rotations);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer_rotations);
@@ -139,15 +157,16 @@ int main()
 
 		//camera transformations setup
 		glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1280.f / 720.f, 0.1f, 1000.0f);
-		glm::mat4 view = camera.GetViewMatrix();;
+		glm::mat4 view = camera.GetViewMatrix();
 		//Shader camera transformation pass
 		shader.use();
 		shader.setMat4Float("projection", glm::value_ptr(projection));
 		shader.setMat4Float("view", glm::value_ptr(view));
 		instancingShader.use();
+		instancingShader.setFloat("deltaTime", deltaTime);
 		instancingShader.setMat4Float("projection", glm::value_ptr(projection));
 		instancingShader.setMat4Float("view", glm::value_ptr(view));
-
+		updateSimple<<<1, 10>>>(cudaAccelerations, cudaPositions);
 		//draw objects
 		instancingShader.use();
 		rockModel.DrawInstanced(instancingShader, N);
@@ -156,6 +175,7 @@ int main()
 		glfwPollEvents();
 		
 	}
+	//TODO: Clear data
 	glfwTerminate();
 	return 0;
 }

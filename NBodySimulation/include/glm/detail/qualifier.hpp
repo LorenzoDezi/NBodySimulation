@@ -89,23 +89,23 @@ namespace detail
 		} type;
 	};
 
-#	if GLM_HAS_ALIGNOF
-		template<length_t L, typename T>
-		struct storage<L, T, true>
-		{
-			typedef struct alignas(L * sizeof(T)) type {
-				T data[L];
-			} type;
-		};
-
-		template<typename T>
-		struct storage<3, T, true>
-		{
-			typedef struct alignas(4 * sizeof(T)) type {
-				T data[4];
-			} type;
-		};
-#	endif
+//#	if GLM_HAS_ALIGNOF
+//		template<length_t L, typename T>
+//		struct storage<L, T, true>
+//		{
+//			typedef struct alignas(L * sizeof(T)) type {
+//				T data[L];
+//			} type;
+//		};
+//
+//		template<typename T>
+//		struct storage<3, T, true>
+//		{
+//			typedef struct alignas(4 * sizeof(T)) type {
+//				T data[4];
+//			} type;
+//		};
+//#	endif
 
 #	if GLM_ARCH & GLM_ARCH_SSE2_BIT
 	template<>

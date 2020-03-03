@@ -15,6 +15,9 @@
     <CudaCompile Include="main.cu">
       <Filter>source</Filter>
     </CudaCompile>
+    <CudaCompile Include="nBodyKernels.cu">
+      <Filter>source</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">
@@ -28,6 +31,9 @@
     </ClInclude>
     <ClInclude Include="Shader.h">
       <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="nBodyKernels.cuh">
+      <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -54,5 +60,6 @@
     <None Include="vertex_planet.glsl">
       <Filter>shaders</Filter>
     </None>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>
