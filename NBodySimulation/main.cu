@@ -7,6 +7,7 @@
 #include "Mesh.h"
 #include "Camera.h"
 #include "nBodyKernels.cuh"
+#include "cudaUtilities.cuh"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image/stb_image.h"
 #include "glfw/glfw3.h"
@@ -16,6 +17,7 @@
 #include <stdio.h>
 
 #define N 1000
+#define BLOCK_DIM 256
 #define RADIUS 100
 #define MASS_SEED 100
 
@@ -70,7 +72,7 @@ int main()
 	for (unsigned int i = 0; i < N; i++)
 	{
 		//Start acceleration is 0
-		accelerations[i] = glm::vec4(0.0f, 0.5f, 0.0f, 1.0f);
+		accelerations[i] = glm::vec4(0.0f, 5000.0f, 0.0f, 1.0f);
 		
 		//Position: random point inside a sphere of radius RADIUS
 		float x, y, z;
@@ -81,9 +83,9 @@ int main()
 		x = radius * cos(theta) * cos(gamma);
 		y = radius * sin(gamma);
 		z = radius * sin(theta) * cos(gamma);
-		// Scale: scale depending on mass
-		float mass = (rand() % MASS_SEED) / 100.0f + 0.5f;
-		positions[i] = glm::vec4(x, y, z, mass);
+		// Scale: mass depending on scale
+		float scale = (rand() % MASS_SEED) / 100.0f + 0.5f;
+		positions[i] = glm::vec4(x, y, z, scale);
 		// Rotation: add random rotation around a randomly picked rotation axis vector
 		float rotAngle = (rand() % 360);
 		rotations[i] = rotAngle;
@@ -110,9 +112,9 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, buffer_accelerations);
 	glBufferData(GL_ARRAY_BUFFER, size, &accelerations[0], GL_DYNAMIC_DRAW);
 	//Mapping the VBO to CUDA
-	cudaGraphicsGLRegisterBuffer(&cudaAccelerationsResource, buffer_accelerations, cudaGraphicsRegisterFlags::cudaGraphicsRegisterFlagsNone);
-	cudaGraphicsMapResources(1, &cudaAccelerationsResource);
-	cudaGraphicsResourceGetMappedPointer((void **)&cudaAccelerations, &size, cudaAccelerationsResource);
+	CHECK(cudaGraphicsGLRegisterBuffer(&cudaAccelerationsResource, buffer_accelerations, cudaGraphicsRegisterFlags::cudaGraphicsRegisterFlagsNone));
+	CHECK(cudaGraphicsMapResources(1, &cudaAccelerationsResource));
+	CHECK(cudaGraphicsResourceGetMappedPointer((void **)&cudaAccelerations, &size, cudaAccelerationsResource));
 
 	glGenBuffers(1, &buffer_rotations);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer_rotations);
@@ -145,6 +147,7 @@ int main()
 	}
 	
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	int grid_size = (N + BLOCK_DIM) / BLOCK_DIM;
 	while (!glfwWindowShouldClose(window)) {
 		//Delta-time per frame logic
 		float currentFrame = glfwGetTime();
@@ -166,9 +169,11 @@ int main()
 		instancingShader.setFloat("deltaTime", deltaTime);
 		instancingShader.setMat4Float("projection", glm::value_ptr(projection));
 		instancingShader.setMat4Float("view", glm::value_ptr(view));
-		updateSimple<<<1, 10>>>(cudaAccelerations, cudaPositions);
+		updateSimple<<<grid_size, BLOCK_DIM>>>(cudaAccelerations, cudaPositions, deltaTime);
+		CHECK(cudaDeviceSynchronize());
 		//draw objects
 		instancingShader.use();
+		//DEBUG: Doesn't draw
 		rockModel.DrawInstanced(instancingShader, N);
 
 		glfwSwapBuffers(window);

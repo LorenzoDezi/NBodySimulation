@@ -35,6 +35,12 @@
     <ClInclude Include="nBodyKernels.cuh">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="cudaUtilities.cuh">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -47,6 +53,9 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="Shader.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
