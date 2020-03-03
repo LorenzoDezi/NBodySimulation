@@ -64,6 +64,9 @@
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <Include>include;%(Include)</Include>
     </CudaCompile>
+    <CudaLink>
+      <AdditionalDependencies>-lcurand</AdditionalDependencies>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -90,6 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="constants.h" />
     <ClInclude Include="cudaUtilities.cuh" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Model.h" />

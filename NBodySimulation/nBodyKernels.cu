@@ -1,16 +1,9 @@
 #include "nBodyKernels.cuh"
 #include <cmath>
 
-#define G 9.81
-//DEBUG
-#define N 1000
-#define EPS 5
-//The fourth component of the position vector is the scale of the object.
-//The mass multiplier * scale will define its mass
-#define MASS_MULTIPLIER 5
-#define TIME_STEP 1
 
-__global__ void updateSimple(float4 * accelerations, float4 * positions, float deltaTime)
+
+__global__ void updateSimple(float4 * positions, float deltaTime)
 {
 	//DEBUG
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -36,14 +29,25 @@ __global__ void updateSimple(float4 * accelerations, float4 * positions, float d
 		updatedPosition(position_i.z, new_acc.z, deltaTime),
 		position_i.w
 	};
-	//DEBUG
-	if (i == 0) {
-		printf("Updated Position: %.3f \n", updatedPosition(position_i.x, new_acc.x, deltaTime));
-		printf("Position: %.3f \n", positions[i].x);
-		printf("Acceleration: %.3f \n", new_acc.x);
-	}
 }
 
 __device__ float updatedPosition(float pos, float acc, float deltaTime) {
 	return pos + ((1 / 2.f) * acc * deltaTime * deltaTime);
+}
+
+__global__ void generatePointInsideSphere(float4 * points, curandState * states)
+{
+	unsigned int tid = threadIdx.x + blockDim.x * blockIdx.x;
+	if (tid >= N) return;
+	curand_init(tid, 5000, 500, &states[tid]);
+	float x, y, z, w, trial = 0;
+	do {
+		x = (curand_uniform(&states[tid]) * 2 - 1) * RADIUS * 5;
+		y = (curand_uniform(&states[tid]) * 2 - 1) * RADIUS * 5;
+		z = (curand_uniform(&states[tid]) * 2 - 1) * RADIUS * 5;
+		w = curand_uniform(&states[tid]) * SCALE;
+		trial += 1;
+	} while (x * x + y * y + z * z > RADIUS && trial <= MAX_TRIALS);
+	points[tid] = { x, y, z, w };
+	printf("Index: %d, x: %.3f, y: %.3f, z: %.3f, mass: %.3f \n", tid, x, y, z, w);
 }
