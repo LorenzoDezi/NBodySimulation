@@ -26,9 +26,6 @@
     <ClInclude Include="Shader.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="nBodyKernels.cuh">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="Timer.h">
       <Filter>include</Filter>
     </ClInclude>
@@ -39,6 +36,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="Quad.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="nBodyKernels.cuh">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

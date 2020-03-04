@@ -74,7 +74,7 @@ int main()
 	//Generation with curand
 	curandState *devStates;
 	int gridSize = (N + BLOCK_DIM) / BLOCK_DIM;
-	cudaMalloc((void **)&devStates, N * sizeof(float));
+	CHECK(cudaMalloc((void **)&devStates, N * sizeof(curandState)));
 	generatePointInsideSphere << <gridSize, BLOCK_DIM >> > (cudaPositions, devStates);
 	CHECK(cudaDeviceSynchronize());
 	cudaFree(devStates);

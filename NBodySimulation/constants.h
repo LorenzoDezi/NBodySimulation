@@ -1,6 +1,6 @@
 #pragma once
 
-#define N 10000
+#define N 4096
 #define BLOCK_DIM 128
 #define RADIUS 100
 #define G 9.81f
