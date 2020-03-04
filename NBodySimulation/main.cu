@@ -23,11 +23,12 @@ void mouse_callback(GLFWwindow* w, double xpos, double ypos);
 void processInput(GLFWwindow *w);
 
 float lastFrame = 0.0f;
+float timeSinceLastStep = 0.0f;
 float deltaTime = 0.0f;
 bool firstMouse = true;
 float lastX = 0.0f;
 float lastY = 0.0f;
-Camera camera(glm::vec3(0.f, 0.f, 5.f), glm::vec3(0.f, 1.0f, 0.0f));
+Camera camera(glm::vec3(0.f, 0.f, 1000.f), glm::vec3(0.f, 1.0f, 0.0f));
 
 int main()
 {
@@ -54,14 +55,17 @@ int main()
 	Shader instancingShader("vertex.glsl", "fragment.glsl");
 	
 	//Model loading
-	Model rockModel("assets/rock.obj");
+	Model rockModel("assets/planet.obj");
 
 	unsigned int bufferPositions;
 	cudaGraphicsResource *cudaPositionsResource;
 	//Positions generation
 	float4 * positions, *cudaPositions;
+	float4 * cudaVelocities;
 	positions = new float4[N];
 	size_t size = N * 4 * sizeof(float);
+	CHECK(cudaMalloc((void **)&cudaVelocities, size));
+	CHECK(cudaMemset(cudaVelocities, 0, size));
 	glGenBuffers(1, &bufferPositions);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferPositions);
 	glBufferData(GL_ARRAY_BUFFER, size, &positions[0], GL_DYNAMIC_DRAW);
@@ -93,10 +97,13 @@ int main()
 	}
 	
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	//Preferring L1 over shared in the naive update function (no use of shared)
+	CHECK(cudaFuncSetCacheConfig(updateSimple, cudaFuncCache::cudaFuncCachePreferL1));
 	while (!glfwWindowShouldClose(window)) {
 		//Delta-time per frame logic
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
+		timeSinceLastStep += deltaTime;
 		lastFrame = currentFrame;
 		processInput(window);
 
@@ -104,7 +111,7 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//camera transformations setup
-		glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1280.f / 720.f, 0.1f, 1000.0f);
+		glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1280.f / 720.f, 0.1f, 10000.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 		//Shader camera transformation pass
 		shader.use();
@@ -114,8 +121,12 @@ int main()
 		instancingShader.setFloat("deltaTime", deltaTime);
 		instancingShader.setMat4Float("projection", glm::value_ptr(projection));
 		instancingShader.setMat4Float("view", glm::value_ptr(view));
-		updateSimple<<<gridSize, BLOCK_DIM>>>(cudaPositions, deltaTime);
-		CHECK(cudaDeviceSynchronize());
+		//Physics simulation is updated every TIME_STEP
+		if (timeSinceLastStep >= TIME_STEP) {
+			updateSimple << <gridSize, BLOCK_DIM >> > (cudaPositions, cudaVelocities);
+			CHECK(cudaDeviceSynchronize());
+			timeSinceLastStep = 0.0f;
+		}		
 		//draw objects
 		instancingShader.use();
 		rockModel.DrawInstanced(instancingShader, N);

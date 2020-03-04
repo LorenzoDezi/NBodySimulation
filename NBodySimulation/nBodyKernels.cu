@@ -3,36 +3,39 @@
 
 
 
-__global__ void updateSimple(float4 * positions, float deltaTime)
+__global__ void updateSimple(float4 * positions, float4 * velocities)
 {
 	//DEBUG
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= N) return;
-	float4 position_i = positions[i]; //the fourth value of position is the mass
+
+	float4 position_i = positions[i]; //the fourth value of position is the scale
+	float4 velocity_i = velocities[i];
 	float4 position_j;
 	float4 new_acc = float4();
 	for (int j = 0; j < N; j++) {
 		position_j = positions[j];
 		float3 dist_ij = { position_j.x - position_i.x, position_j.y - position_i.y, position_j.z - position_i.z };
-		float distSqr = dist_ij.x * dist_ij.x + dist_ij.y * dist_ij.y + dist_ij.z * dist_ij.z + EPS * EPS;
-		float denom = sqrtf(distSqr * distSqr * distSqr);
-		new_acc.x += (position_j.w * MASS_MULTIPLIER * dist_ij.x) / denom;
-		new_acc.y += (position_j.w * MASS_MULTIPLIER * dist_ij.y) / denom;
-		new_acc.z += (position_j.w * MASS_MULTIPLIER * dist_ij.z) / denom;
+		float distSqr = dist_ij.x * dist_ij.x + dist_ij.y * dist_ij.y + dist_ij.z * dist_ij.z + EPS_SQUARED;
+		float mass_jOverDenom = position_j.w * MASS_MULTIPLIER / (sqrtf(distSqr * distSqr * distSqr));
+		new_acc.x += mass_jOverDenom * dist_ij.x;
+		new_acc.y += mass_jOverDenom * dist_ij.y;
+		new_acc.z += mass_jOverDenom * dist_ij.z;
 	};
 	new_acc.x *= G;
 	new_acc.y *= G;
 	new_acc.z *= G;
+	//Integration step
+	velocity_i.x += new_acc.x * TIME_STEP;
+	velocity_i.y += new_acc.y * TIME_STEP;
+	velocity_i.z += new_acc.z * TIME_STEP;
 	positions[i] = { 
-		updatedPosition(position_i.x, new_acc.x, deltaTime),
-		updatedPosition(position_i.y, new_acc.y, deltaTime), 
-		updatedPosition(position_i.z, new_acc.z, deltaTime),
+		position_i.x + velocity_i.x * TIME_STEP,
+		position_i.y + velocity_i.y * TIME_STEP,
+		position_i.z + velocity_i.z * TIME_STEP,
 		position_i.w
 	};
-}
-
-__device__ float updatedPosition(float pos, float acc, float deltaTime) {
-	return pos + ((1 / 2.f) * acc * deltaTime * deltaTime);
+	velocities[i] = velocity_i;
 }
 
 __global__ void generatePointInsideSphere(float4 * points, curandState * states)
