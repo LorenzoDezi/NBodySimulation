@@ -2,9 +2,8 @@
 #include "device_launch_parameters.h"
 #include "glad/glad.h"
 #include "cuda_gl_interop.h"
-#include "Model.h"
+#include "Quad.h"
 #include "Shader.h"
-#include "Mesh.h"
 #include "Camera.h"
 #include "nBodyKernels.cuh"
 #include "cudaUtilities.cuh"
@@ -28,7 +27,7 @@ float deltaTime = 0.0f;
 bool firstMouse = true;
 float lastX = 0.0f;
 float lastY = 0.0f;
-Camera camera(glm::vec3(0.f, 0.f, 1000.f), glm::vec3(0.f, 1.0f, 0.0f));
+Camera camera(glm::vec3(0.f, 0.f, 500.f), glm::vec3(0.f, 1.0f, 0.0f));
 
 int main()
 {
@@ -51,11 +50,10 @@ int main()
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glEnable(GL_DEPTH_TEST);
 
-	Shader shader("vertex_planet.glsl", "fragment.glsl");
 	Shader instancingShader("vertex.glsl", "fragment.glsl");
 	
 	//Model loading
-	Model rockModel("assets/planet.obj");
+	Quad rockModel("assets/whitelight.png");
 
 	unsigned int bufferPositions;
 	cudaGraphicsResource *cudaPositionsResource;
@@ -82,19 +80,15 @@ int main()
 	cudaFree(devStates);
 
 	//Assignment of attributes to VAOs
-	std::vector<int> VAOs = rockModel.GetVAOs();
-	for (unsigned int i = 0; i < VAOs.size(); i++)
-	{
-		unsigned int VAO = VAOs[i];
-		glBindVertexArray(VAO);
-		GLsizei f4size = 4 * sizeof(float);
-		glBindBuffer(GL_ARRAY_BUFFER, bufferPositions);
-		glEnableVertexAttribArray(3);
-		glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, f4size, (void*)0);
-		glVertexAttribDivisor(3, 1);
+	unsigned int VAO = rockModel.GetVAO();
+	glBindVertexArray(VAO);
+	GLsizei f4size = 4 * sizeof(float);
+	glBindBuffer(GL_ARRAY_BUFFER, bufferPositions);
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, f4size, (void*)0);
+	glVertexAttribDivisor(3, 1);
 
-		glBindVertexArray(0);
-	}
+	glBindVertexArray(0);
 	
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	//Preferring L1 over shared in the naive update function (no use of shared)
@@ -114,9 +108,6 @@ int main()
 		glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1280.f / 720.f, 0.1f, 10000.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 		//Shader camera transformation pass
-		shader.use();
-		shader.setMat4Float("projection", glm::value_ptr(projection));
-		shader.setMat4Float("view", glm::value_ptr(view));
 		instancingShader.use();
 		instancingShader.setFloat("deltaTime", deltaTime);
 		instancingShader.setMat4Float("projection", glm::value_ptr(projection));

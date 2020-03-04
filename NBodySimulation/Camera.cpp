@@ -27,6 +27,18 @@ glm::mat4 Camera::GetViewMatrix()
 }
 
 
+glm::mat4 Camera::GetNoRotViewMatrix()
+{
+	glm::mat4 viewMat = GetViewMatrix();
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			viewMat[i][j] = j == i ? 1 : 0; //Only 1 on diagonal
+		}
+	}
+	return viewMat;
+
+}
+
 void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime)
 {
 	float velocity = MovementSpeed * deltaTime;

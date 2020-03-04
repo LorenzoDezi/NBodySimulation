@@ -49,6 +49,10 @@ public:
 	// Returns the view matrix calculated using Euler Angles and the LookAt Matrix
 	glm::mat4 GetViewMatrix();
 
+	// Returns the view matrix with the upper 3x3 matrix as an identity matrix, to draw 
+	// particles always facing the camera
+	glm::mat4 GetNoRotViewMatrix();
+
 	// Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
 	void ProcessKeyboard(Camera_Movement direction, float deltaTime);
 

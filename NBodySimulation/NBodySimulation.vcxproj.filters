@@ -23,12 +23,6 @@
     <ClInclude Include="Camera.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="Mesh.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="Model.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="Shader.h">
       <Filter>include</Filter>
     </ClInclude>
@@ -44,15 +38,12 @@
     <ClInclude Include="constants.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="Quad.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="Mesh.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="Model.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="Shader.cpp">
@@ -61,15 +52,15 @@
     <ClCompile Include="Timer.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="Quad.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="fragment.glsl">
       <Filter>shaders</Filter>
     </None>
     <None Include="vertex.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="vertex_planet.glsl">
       <Filter>shaders</Filter>
     </None>
     <None Include="cpp.hint" />

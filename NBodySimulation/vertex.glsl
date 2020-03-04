@@ -12,5 +12,7 @@ void main()
 {
 	TexCoords = aTexCoords;
 	vec3 scaledLocalPos = aPos * aGlobalPosition.w;
-	gl_Position = projection * view * vec4(scaledLocalPos + aGlobalPosition.xyz, 1.0f);
+	mat3 particleRotMat = transpose(mat3(view));
+	mat4 model = mat4(vec4(particleRotMat[0], 0), vec4(particleRotMat[1], 0), vec4(particleRotMat[2], 0), vec4(aGlobalPosition.xyz, 1.0f));
+	gl_Position = projection * view * model * vec4(scaledLocalPos, 1.0);
 }
