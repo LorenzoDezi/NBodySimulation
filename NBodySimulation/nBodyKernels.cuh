@@ -7,7 +7,11 @@
 //Naive kernel to update positions and accelerations for nBody simulations
 __global__ void updateSimple(float4 * positions, float4 * velocities);
 
+__global__ void updateSimpleLoopUnroll(float4 * positions, float4 * velocities);
+
 __global__ void updateShared(float4 * positions, float4 * velocities);
+
+__global__ void updateSharedLoopUnroll(float4 * positions, float4 * velocities);
 
 __global__ void generatePointInsideSphere(float4 * points, curandState * states);
 

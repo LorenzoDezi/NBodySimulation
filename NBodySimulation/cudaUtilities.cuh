@@ -1,3 +1,5 @@
+#pragma once
+#include <iostream>
 
 #define CHECK(call) {  \
 	cudaError_t cudaStatus = call; \

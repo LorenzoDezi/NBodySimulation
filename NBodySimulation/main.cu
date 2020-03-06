@@ -35,7 +35,7 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	GLFWwindow *window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
+	GLFWwindow *window = glfwCreateWindow(1920, 1080, "LearnOpenGL", NULL, NULL);
 	if (window == NULL) {
 		std::cout << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
@@ -45,7 +45,7 @@ int main()
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		std::cout << "Failed to initialize GLAD" << std::endl;
 	}
-	glViewport(0, 0, 800, 600);
+	glViewport(0, 0, 1920, 1080);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glEnable(GL_DEPTH_TEST);
@@ -53,7 +53,7 @@ int main()
 	Shader instancingShader("vertex.glsl", "fragment.glsl");
 	
 	//Model loading
-	Quad rockModel("assets/whitelight.png");
+	Quad particle("assets/whitelight.png");
 
 	unsigned int bufferPositions;
 	cudaGraphicsResource *cudaPositionsResource;
@@ -62,8 +62,6 @@ int main()
 	float4 * cudaVelocities;
 	positions = new float4[N];
 	size_t size = N * 4 * sizeof(float);
-	CHECK(cudaMalloc((void **)&cudaVelocities, size));
-	CHECK(cudaMemset(cudaVelocities, 0, size));
 	glGenBuffers(1, &bufferPositions);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferPositions);
 	glBufferData(GL_ARRAY_BUFFER, size, &positions[0], GL_DYNAMIC_DRAW);
@@ -77,10 +75,14 @@ int main()
 	CHECK(cudaMalloc((void **)&devStates, N * sizeof(curandState)));
 	generatePointInsideSphere << <gridSize, BLOCK_DIM >> > (cudaPositions, devStates);
 	CHECK(cudaDeviceSynchronize());
+	CHECK(cudaGetLastError());
 	cudaFree(devStates);
+	//Allocating velocities
+	CHECK(cudaMalloc((void **)&cudaVelocities, size));
+	CHECK(cudaMemset(cudaVelocities, 0, size));
 
 	//Assignment of attributes to VAOs
-	unsigned int VAO = rockModel.GetVAO();
+	unsigned int VAO = particle.GetVAO();
 	glBindVertexArray(VAO);
 	GLsizei f4size = 4 * sizeof(float);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferPositions);
@@ -113,14 +115,10 @@ int main()
 		instancingShader.setMat4Float("projection", glm::value_ptr(projection));
 		instancingShader.setMat4Float("view", glm::value_ptr(view));
 		//Physics simulation is updated every TIME_STEP
-		if (timeSinceLastStep >= TIME_STEP) {
-			updateSimple << <gridSize, BLOCK_DIM >> > (cudaPositions, cudaVelocities);
-			CHECK(cudaDeviceSynchronize());
-			timeSinceLastStep = 0.0f;
-		}		
+		updateSharedLoopUnroll << <gridSize, BLOCK_DIM>> > (cudaPositions, cudaVelocities);
 		//draw objects
 		instancingShader.use();
-		rockModel.DrawInstanced(instancingShader, N);
+		particle.DrawInstanced(instancingShader, N);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

@@ -1,7 +1,7 @@
 #pragma once
 
-#define N 4096
-#define BLOCK_DIM 128
+#define N 20000
+#define BLOCK_DIM 512
 #define RADIUS 100
 #define G 9.81f
 //Softening factor
